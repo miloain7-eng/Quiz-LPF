@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Liga Quiz</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Rajdhani:wght@500;700&display=swap');
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#07130d;--fg:#eef7ee;--card:#0f2118;--card2:#132a1e;--pitch:#0d3d22;--pitch2:#0a3019;--acc:#ffd34d;--acc2:#ffb800;--bad:#ff5b5b;--ok:#4ade80;--mut:#8fae9a;--line:#1f4530}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+:root[data-theme="light"]{--bg:#eef2ea;--fg:#13231a;--card:#fff;--card2:#f4f7f2;--pitch:#1f6b3a;--acc:#f2c230;--mut:#5c6b62;--line:#cdd9cf}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;background:
+radial-gradient(ellipse 80% 50% at 50% -10%,rgba(255,211,77,.10),transparent),
+radial-gradient(circle at 15% 20%,rgba(255,255,255,.05),transparent 40%),
+repeating-linear-gradient(90deg,var(--pitch),var(--pitch) 46px,var(--pitch2) 46px,var(--pitch2) 92px),
+var(--bg);
+background-attachment:fixed;color:var(--fg);font-family:'Rajdhani',"Trebuchet MS",Verdana,sans-serif;font-size:1.05rem;display:flex;justify-content:center}
+main{width:100%;max-width:520px;padding:14px}
+h1{font-family:'Oswald',sans-serif;font-size:1.5rem;letter-spacing:.03em;text-transform:uppercase;margin:4px 0 12px;color:var(--acc);text-shadow:0 0 18px rgba(255,211,77,.35)}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+select,button{font:inherit;font-size:.9rem;padding:8px 10px;border-radius:8px;border:2px solid var(--pitch);background:var(--card);color:var(--fg);width:100%;margin-top:6px}
+button{cursor:pointer;font-weight:bold}
+button.go{background:var(--acc);border-color:var(--acc);color:#13231a}
+button:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+details{margin-top:8px}
+details summary{cursor:pointer;padding:4px 0}
+.score{display:flex;align-items:center;justify-content:space-between;background:var(--pitch);color:#fff;border-radius:10px;padding:8px 12px}
+.score b{font-size:1.4rem}
+.clock{text-align:center;font-size:1.4rem;font-weight:bold}
+.clock small{display:block;font-size:.7rem;opacity:.8;font-weight:normal}
+.field{position:relative;height:120px;background:repeating-linear-gradient(90deg,var(--pitch),var(--pitch) 40px,#1a5e32 40px,#1a5e32 80px);border-radius:12px;margin:10px 0;overflow:hidden;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:bold;padding:8px}
+.ball{position:absolute;font-size:1.6rem;left:10%;top:50%;transition:left .9s ease-in,top .9s}
+.ball.att{left:88%}.ball.opp{left:6%}.ball.out{left:88%;top:-20%}
+.opts button{text-align:left;margin-top:8px}
+.bar{height:8px;background:var(--mut);border-radius:4px;overflow:hidden;opacity:.6}
+.bar i{display:block;height:100%;background:var(--acc);width:100%}
+.msg{font-size:1.15rem;text-align:center;font-weight:bold;padding:8px}
+.ok{color:var(--ok)}.no{color:var(--bad)}
+.note{font-size:.8rem;color:var(--mut)}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tabs button{width:auto;flex:1;background:var(--card);opacity:.6}
+.tabs button.on{opacity:1;background:var(--acc);border-color:var(--acc);color:#13231a}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:4px 3px;text-align:center;border-bottom:1px solid var(--mut)}
+td:nth-child(2),th:nth-child(2){text-align:left}
+.you{font-weight:bold;color:var(--ok)}
+.drawrow{opacity:0;transform:translateY(6px);animation:fi .35s forwards}
+@keyframes fi{to{opacity:1;transform:none}}
+.fx{display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px dashed var(--mut);font-size:.85rem}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){.ball{transition:none}}
+</style></head><body><main>
+<h1>⚽ Liga Quiz</h1>
+<div class="tabs"><button id="tabP" class="on">Partido rápido</button><button id="tabL">Liga anual</button></div>
+
+<section id="menu" class="card">
+  <label>Tu equipo<select id="me"></select></label>
+  <label>Rival<select id="rv"></select></label>
+  <button class="go" id="start">Jugar partido</button>
+  <p class="note">Versión de prueba: los niveles de los equipos son valores provisorios y las preguntas son un set inicial.</p>
+</section>
+
+<section id="game" hidden>
+  <div class="score"><span id="n1"></span><b id="s1">0</b><div class="clock"><span id="min">0'</span><small id="half">1er tiempo</small></div><b id="s2">0</b><span id="n2"></span></div>
+  <div class="field" id="field"><span class="ball" id="ball">⚽</span><span id="status">¡Arranca el partido!</span></div>
+  <div class="card" id="qbox" hidden>
+    <div class="bar"><i id="tbar"></i></div>
+    <p id="kind" class="note"></p>
+    <p id="qtext"><b></b></p>
+    <div class="opts" id="opts"></div>
+  </div>
+  <div class="card" id="htbox" hidden>
+    <p><b>Entretiempo</b> — <span id="htleft">60</span> s</p>
+    <button class="go" id="skip">Saltar entretiempo</button>
+  </div>
+  <div class="card" id="end" hidden>
+    <div class="msg" id="result"></div>
+    <button class="go" id="again">Jugar de nuevo</button>
+  </div>
+</section>
+
+<section id="liga">
+  <div class="card" id="ligaSetup">
+    <label>Elegí con qué equipo competís<select id="myClub"></select></label>
+    <p class="note">Sortea el fixture de todos contra todos, ida y vuelta, entre los 20 equipos (38 fechas), con fecha, hora y estadio de cada partido.</p>
+    <button class="go" id="draw">Sortear fixture</button>
+    <div id="drawAnim"></div>
+  </div>
+  <div class="card" id="ligaBoard" hidden>
+    <p><b>Fecha <span id="curRound">1</span> / 38</b></p>
+    <div id="myMatch"></div>
+    <button class="go" id="playMine" hidden>Jugar mi partido</button>
+    <div id="fixtureList"></div>
+    <details><summary class="note">📅 Calendario (fechas jugadas y por jugar)</summary>
+      <div id="calList" style="max-height:260px;overflow-y:auto;margin-top:6px"></div>
+    </details>
+    <details><summary class="note">🏆 Tabla de posiciones</summary>
+      <table id="tabla"><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>Pts</th><th>DG</th></tr></thead><tbody></tbody></table>
+    </details>
+    <details><summary class="note">Opción de desarrollador</summary>
+      <button id="simAll">Simular todo hasta el final (IA vs IA)</button>
+      <button id="simReset">Volver a sortear</button>
+    </details>
+  </div>
+</section>
+
+<script>
+const TEAMS={
+"Boca":82,"River":83,"Racing":76,"Independiente":72,"San Lorenzo":71,
+"Vélez":75,"Estudiantes":74,"Talleres":73,"Lanús":70,"Argentinos Jrs":69,
+"Huracán":68,"Newell's":68,"Rosario Central":72,"Gimnasia (LP)":65,
+"Defensa y Justicia":70,"Godoy Cruz":67,"Belgrano":68,"Unión":64,
+"Colón":64,"Atlético Tucumán":63
+};
+const QS=[
+["¿Qué selección ganó el Mundial 2022?",["Francia","Argentina","Croacia","Brasil"],1,1],
+["¿En qué año ganó Argentina su primer Mundial?",["1978","1986","1974","1990"],0,1],
+["¿Quién es el máximo goleador histórico de la Selección Argentina?",["Batistuta","Maradona","Messi","Agüero"],2,1],
+["¿Contra qué selección Maradona hizo el gol de la mano en 1986?",["Alemania","Bélgica","Inglaterra","Italia"],2,1],
+["¿Qué selección ganó el Mundial 2018?",["Francia","Croacia","Bélgica","Alemania"],0,1],
+["¿Qué selección tiene más Mundiales ganados?",["Alemania","Brasil","Italia","Argentina"],1,1],
+["¿Qué club es conocido como El Ciclón?",["San Lorenzo","Huracán","Vélez","Lanús"],0,1],
+["¿Qué país fue sede del Mundial 1978?",["España","México","Argentina","Uruguay"],2,1],
+["¿Cómo se llama el estadio de River Plate?",["La Bombonera","El Cilindro","Monumental","Gigante de Arroyito"],2,1],
+["¿Qué club se conoce como El Rojo?",["Racing","Independiente","Huracán","Tigre"],1,1],
+["¿Qué jugador argentino ganó el Balón de Oro en 2023 (por su actuación en 2022)?",["Julián Álvarez","Lionel Messi","Enzo Fernández","Emiliano Martínez"],1,1],
+["¿Qué arquero argentino atajó penales en la final del Mundial 2022?",["Franco Armani","Emiliano Martínez","Sergio Romero","Nahuel Guzmán"],1,1],
+["¿En qué país se jugó el Mundial 1990?",["Italia","España","Francia","Alemania"],0,1],
+["¿Qué club formó a Lionel Messi antes de ir a Europa?",["Newell's Old Boys","River Plate","Boca Juniors","Rosario Central"],0,1],
+["¿Cuántas Copas del Mundo ganó Alemania?",["3","4","5","2"],1,1],
+["¿Qué jugador es apodado El Kun?",["Sergio Agüero","Carlos Tevez","Gonzalo Higuaín","Ángel Di María"],0,1],
+["¿Qué jugador tiene más Balones de Oro en la historia?",["Cristiano Ronaldo","Messi","Maradona","Pelé"],1,1],
+["¿Cómo se conoce al clásico entre Boca y River?",["Clásico platense","Superclásico","Clásico del sur","El Rojo vs El Ciclón"],1,1],
+["¿Quién dirigió a la Selección Argentina en el Mundial 2022?",["Sampaoli","Bielsa","Scaloni","Pekerman"],2,1],
+["¿A qué club pertenece históricamente el Cilindro de Avellaneda?",["Racing","Independiente","Huracán","Banfield"],0,1],
+
+["¿Cuántas Copas Libertadores ganó Boca?",["4","5","6","7"],2,2],
+["¿Cómo se llama el estadio de Racing?",["El Monumental","Presidente Perón","La Bombonera","Libertadores de América"],1,2],
+["¿Qué club argentino ganó más Copas Libertadores?",["Boca","River","Estudiantes","Independiente"],3,2],
+["¿En qué año se fundó Boca Juniors?",["1901","1905","1910","1913"],1,2],
+["¿Qué club es de Rosario y se llama Canalla?",["Newell's","Central Córdoba","Rosario Central","Belgrano"],2,2],
+["¿En qué estadio se jugó la final del Mundial 2022?",["Maracaná","Lusail","Wembley","Azteca"],1,2],
+["¿Cómo se llama el estadio de Vélez Sarsfield?",["José Amalfitani","Libertadores de América","Florencio Sola","Ciudad de Vicente López"],0,2],
+["¿Qué club porteño es apodado El Globo?",["Huracán","San Lorenzo","Argentinos Juniors","Vélez"],0,2],
+["¿Cuál es el clásico rosarino, entre Rosario Central y...?",["Newell's Old Boys","Huracán","Colón","Unión"],0,2],
+["¿Qué selección venció a Argentina en la final del Mundial 2014?",["Brasil","Alemania","Holanda","España"],1,2],
+["¿Qué club brasileño fue campeón de la Copa Libertadores 2023, venciendo a Boca en la final?",["Palmeiras","Flamengo","Fluminense","Gremio"],2,2],
+["¿Cuántos goles hizo Messi en el Mundial 2022?",["5","7","8","6"],1,2],
+["¿Qué club es apodado La Academia?",["Racing Club","River Plate","Vélez","Talleres"],0,2],
+["¿En qué ciudad argentina se jugó la final del Mundial 1978?",["Córdoba","Rosario","Mendoza","Buenos Aires"],3,2],
+["¿Qué club argentino es apodado El Fortín?",["Vélez Sarsfield","Unión","Colón","Godoy Cruz"],0,2],
+["¿Qué selección quedó eliminada en cuartos del Mundial 2022 ante Argentina?",["Australia","Países Bajos","Croacia","Polonia"],1,2],
+["¿Quién marcó dos goles en la final de la Copa Libertadores 2018 entre Boca y River?",["Quintero","Pity Martínez","Benedetto","Pratto"],1,2],
+["¿Qué club uruguayo ganó la primera Copa Libertadores de la historia (1960)?",["Nacional","Peñarol","Danubio","Defensor"],1,2],
+["¿Qué club ganó el primer campeonato de Primera División en Argentina (1891)?",["Lomas Athletic","Boca","River","Alumni"],0,2],
+["¿En qué Mundial quedó eliminada Argentina en la primera ronda (fase de grupos)?",["1990","2002","2010","1958"],1,2],
+["¿Qué selección ganó la Copa América 2021, disputada en el Maracaná?",["Brasil","Argentina","Uruguay","Chile"],1,2],
+["¿En qué estadio de Rosario se jugó el histórico 6-0 de Argentina a Perú en el Mundial 1978?",["La Bombonera","Gigante de Arroyito","Monumental","Mario Kempes"],1,2],
+
+["¿En qué año Independiente ganó su séptima y última Copa Libertadores?",["1984","1995","2002","2010"],0,3],
+["¿Qué equipo argentino perdió la final de la Copa Libertadores 2019 ante Flamengo?",["Boca","River","San Lorenzo","Racing"],1,3],
+["¿Quién marcó el gol argentino que empató la semifinal del Mundial 1990 ante Italia?",["Maradona","Caniggia","Troglio","Burruchaga"],1,3],
+["¿Qué club brasileño enfrentó a Boca en la final de la Copa Libertadores 2000?",["Cruzeiro","São Paulo","Palmeiras","Flamengo"],2,3],
+["¿En qué estadio se jugó la final del Mundial 1990?",["San Siro","Olímpico de Roma","Camp Nou","Bernabéu"],1,3],
+["¿En qué torneo debutó Diego Maradona con la Selección mayor (1977)?",["Mundial","Copa América","Amistoso vs Hungría","Sudamericano"],2,3],
+["¿En qué año Racing salió campeón de la Copa Libertadores por primera y única vez?",["1966","1967","1972","1985"],1,3],
+["¿Quién fue el arquero titular de Argentina en los Mundiales de 1978 y 1982?",["Fillol","Pumpido","Goycochea","Islas"],0,3],
+
+["¿Cuántos títulos de Copa Libertadores tiene Peñarol de Uruguay?",["3","4","5","6"],2,4],
+["¿Quién fue el entrenador de Independiente cuando ganó su séptima Copa Libertadores en 1984?",["Carlos Bilardo","José Pastoriza","Marcelo Bielsa","Ángel Cappa"],1,4],
+["¿Qué jugador fue la gran figura del Independiente campeón de la Libertadores 1984, considerado su máximo ídolo?",["Jorge Burruchaga","Ricardo Bochini","Daniel Bertoni","Claudio Marangoni"],1,4],
+["¿En qué ciudad brasileña se jugó la ida de la final de la Libertadores 1984 entre Independiente y Gremio?",["San Pablo","Río de Janeiro","Porto Alegre","Belo Horizonte"],2,4]
+];
+const $=id=>document.getElementById(id);
+QS.forEach((q,i)=>q[4]=i);
+let recentQ=[];
+const HALF=45,QT=15,BASE=0.2;
+let S,timer,qTimer,pool;
+["me","rv"].forEach((id,i)=>{Object.keys(TEAMS).forEach(t=>{const o=document.createElement("option");o.textContent=t;$(id).appendChild(o)});$(id).selectedIndex=i});
+$("start").onclick=start;$("again").onclick=()=>{$("game").hidden=true;$("menu").hidden=false};
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function rnd(a,b){return a+Math.random()*(b-a)}
+function start(){
+  const me=$("me").value,rv=$("rv").value;
+  if(me===rv){alert("Elegí dos equipos distintos");return}
+  S={me,rv,g:[0,0],half:1,t:0,phase:"play",next:rnd(3,6)};
+  pool=shuffle(QS).filter(q=>!recentQ.includes(q[4]));
+  if(pool.length<8)pool=shuffle(QS);
+  $("n1").textContent=me;$("n2").textContent=rv;
+  $("menu").hidden=true;$("game").hidden=false;
+  ["qbox","htbox","end"].forEach(x=>$(x).hidden=true);
+  render();say("¡Arranca el partido!");
+  clearInterval(timer);timer=setInterval(tick,100);
+}
+function render(){
+  $("s1").textContent=S.g[0];$("s2").textContent=S.g[1];
+  $("min").textContent=Math.min(90,Math.floor((S.half-1)*45+S.t))+"'";
+  $("half").textContent=S.half===1?"1er tiempo":"2do tiempo";
+}
+function say(t,cls){$("status").textContent=t;$("ball").className="ball "+(cls||"")}
+function tick(){
+  if(S.phase!=="play")return;
+  const has=S.next<HALF-2,d=has?S.next-S.t:99;
+  const f=d<2.5?0.3+0.7*Math.max(0,d)/2.5:1;
+  S.t+=BASE*f;render();
+  if(f<1&&$("status").textContent!=="⚠️ Se viene peligro…")say("⚠️ Se viene peligro…");
+  if(S.t>=HALF){endHalf();return}
+  if(has&&S.t>=S.next)occasion();
+}
+function pAtt(){
+  const a=TEAMS[S.me],b=TEAMS[S.rv];
+  return Math.min(.7,Math.max(.3,a/(a+b)));
+}
+function occasion(){
+  S.phase="q";
+  const att=Math.random()<pAtt();
+  const scoringDiff=att?(S.g[0]-S.g[1]):(S.g[1]-S.g[0]);
+  let lvl=scoringDiff>=2?3:scoringDiff===1?2:1;
+  const muyDificil=Math.random()<0.1;
+  if(muyDificil)lvl=4;
+  let cand=pool.filter(x=>x[3]===lvl);
+  if(!cand.length)cand=pool.filter(x=>x[3]>=Math.min(3,lvl));
+  if(!cand.length)cand=pool.length?pool:shuffle(QS).filter(q=>!recentQ.includes(q[4]));
+  if(!cand.length)cand=shuffle(QS);
+  const q=cand[Math.floor(Math.random()*cand.length)];
+  pool=pool.filter(x=>x!==q);
+  S.usedThis=S.usedThis||[];S.usedThis.push(q[4]);
+  S.q={att,c:q[2],_lvl:q[3],_muyDificil:muyDificil&&q[3]===4};
+  const lvlTxt=S.q._lvl===4?"⚫ Muy difícil":["","🟢 Fácil","🟡 Media","🔴 Difícil"][S.q._lvl||lvl];
+  $("kind").textContent=(att?"Ocasión de ATAQUE: acertá y es gol":"Ocasión de DEFENSA: acertá y la atajás")+" · "+lvlTxt;
+  $("qtext").innerHTML="<b>"+q[0]+"</b>";
+  $("opts").innerHTML="";
+  q[1].forEach((o,i)=>{const b=document.createElement("button");b.textContent=o;b.onclick=()=>answer(i);$("opts").appendChild(b)});
+  $("qbox").hidden=false;
+  say(att?"¡Ataca "+S.me+"!":"¡Ataca "+S.rv+"!");
+  let left=QT;$("tbar").style.width="100%";
+  clearInterval(qTimer);
+  qTimer=setInterval(()=>{left-=0.1;$("tbar").style.width=(left/QT*100)+"%";if(left<=0)answer(-1)},100);
+}
+function pickJugador(team,rol){
+  const p=PLANTELES[team];if(!p)return null;
+  if(rol==="arquero")return p.arquero[0];
+  const pool=[...p.delanteros,...p.delanteros,...p.medios,...(p.defensas.slice(0,2))];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function answer(i){
+  if(S.phase!=="q")return;
+  clearInterval(qTimer);S.phase="anim";
+  $("qbox").hidden=true;
+  const ok=i===S.q.c;
+  let txt,cls;
+  if(S.q.att){
+    const scorer=pickJugador(S.me,"delantero");
+    if(ok){S.g[0]++;txt="⚽ ¡GOOOL de "+(scorer||S.me)+"!";cls="att"}
+    else{const gk=pickJugador(S.rv,"arquero");txt="🧤 "+(gk?"La ataja "+gk:"La ataja el arquero");cls="out"}
+  }else{
+    const gk=pickJugador(S.me,"arquero");
+    if(ok){txt="🧤 ¡Atajadón de "+(gk||"nuestro arquero")+"!";cls="opp"}
+    else{const scorer=pickJugador(S.rv,"delantero");S.g[1]++;txt="😱 ¡Gol de "+(scorer||S.rv)+"!";cls="att"}
+  }
+  render();say(txt,cls);
+  setTimeout(()=>{S.next=S.t+rnd(5,9);S.phase="play";say("Sigue el partido…")},2200);
+}
+function endHalf(){
+  if(S.half===2){finish();return}
+  S.phase="ht";$("htbox").hidden=false;say("Descanso");
+  let left=60;$("htleft").textContent=left;
+  clearInterval(qTimer);
+  const h=setInterval(()=>{left--;$("htleft").textContent=left;if(left<=0)resume()},1000);
+  function resume(){clearInterval(h);$("htbox").hidden=true;S.half=2;S.t=0;S.next=rnd(3,6);S.phase="play";render();say("¡Arranca el 2do tiempo!")}
+  $("skip").onclick=resume;
+}
+function finish(){
+  clearInterval(timer);S.phase="end";
+  recentQ=(S.usedThis||[]).concat(recentQ).slice(0,2*10);
+  const [a,b]=S.g;
+  let extra="";
+  if(typeof ligaReturn!=="undefined"&&ligaReturn){
+    const {round:r,m}=ligaReturn;
+    const idx=fixture[r].indexOf(m);
+    results[r][idx]=m.home===S.me?[a,b]:[b,a];
+    fixture[r].forEach((mm,i)=>{if(i!==idx&&!results[r][i])results[r][i]=simMatch(mm.home,mm.away)});
+    round=r+1;
+    ligaReturn=null;
+    extra="<p class=\"note\">Se cargó el resultado en la liga y se simularon los demás partidos de la fecha.</p><button class=\"go\" id=\"backLiga\">Volver a la liga</button>";
+  }
+  $("result").innerHTML=(a>b?'<span class="ok">¡Ganó '+S.me+'!</span>':a<b?'<span class="no">Ganó '+S.rv+'</span>':"Empate")+"<br>"+S.me+" "+a+" - "+b+" "+S.rv+extra;
+  $("end").hidden=false;say("Final del partido");
+  if(extra)$("backLiga").onclick=async ()=>{
+    $("tabL").click();
+    if(round<fixture.length){
+      $("myMatch").innerHTML="";$("playMine").hidden=true;
+      await revealRound(round,$("myMatch"));
+    }
+    renderRound();renderTabla();renderCalendario();
+  };
+}
+
+// ---- Liga anual ----
+$("tabP").onclick=()=>{$("tabP").classList.add("on");$("tabL").classList.remove("on");$("menu").hidden=false;$("liga").style.display="none"};
+$("tabL").onclick=()=>{$("tabL").classList.add("on");$("tabP").classList.remove("on");$("menu").hidden=true;$("liga").style.display=""};
+$("liga").style.display="none";
+
+let fixture=[],results=[],round=0,myClub=null;
+const LTEAMS=Object.keys(TEAMS);
+const PLANTELES={
+"Boca":{dt:"Rodolfo Arruabarrena",arquero:["Leandro Brey","Agustín Marchesín"],defensas:["Lautaro Di Lollo","Facundo Herrera","Lautaro Blanco","Leandro Lozano","Nicolás Figal","Marco Pellegrino"],medios:["Leandro Paredes","Santiago Ascacíbar","Milton Delgado","Ander Herrera","Carlos Palacios"],delanteros:["Enner Valencia","Miguel Merentiel","Alan Velasco","Sebastián Villa","Leonel Flores"]},
+"River":{dt:"Leonardo Ponzio",arquero:["Franco Armani"],defensas:["Gonzalo Montiel","Lucas Martínez Quarta","Lautaro Rivero","Marcos Acuña","Fabricio Bustos"],medios:["Aníbal Moreno","Fausto Vera","Tomás Galván","Giuliano Galoppo","Kendry Páez"],delanteros:["Sebastián Driussi","Maximiliano Salas","Facundo Colidio","Ángel Correa"]}
+};
+const ESTADIOS={"Boca":"La Bombonera","River":"El Monumental","Racing":"El Cilindro","Independiente":"Libertadores de América","San Lorenzo":"Pedro Bidegain","Vélez":"José Amalfitani","Estudiantes":"Estadio UNO","Talleres":"Mario A. Kempes","Lanús":"La Fortaleza","Argentinos Jrs":"Diego A. Maradona","Huracán":"Tomás A. Ducó","Newell's":"El Coloso del Parque","Rosario Central":"Gigante de Arroyito","Gimnasia (LP)":"Juan C. Zerillo","Defensa y Justicia":"Norberto Tomaghello","Godoy Cruz":"Feliciano Gambarte","Belgrano":"Gigante de Alberdi","Unión":"15 de Abril","Colón":"Brigadier López","Atlético Tucumán":"Monumental José Fierro"};
+const HORAS=["15:00","17:00","19:00","21:00"];
+LTEAMS.forEach(t=>{const o=document.createElement("option");o.textContent=t;$("myClub").appendChild(o)});
+
+function roundRobin(teams){
+  let arr=teams.slice();if(arr.length%2)arr.push(null);
+  const n=arr.length,rounds=[];
+  for(let r=0;r<n-1;r++){
+    const rd=[];
+    for(let i=0;i<n/2;i++){
+      const a=arr[i],b=arr[n-1-i];
+      if(a&&b)rd.push(r%2===0?[a,b]:[b,a]);
+    }
+    rounds.push(rd);
+    arr.splice(1,0,arr.pop());
+  }
+  const second=rounds.map(rd=>rd.map(([a,b])=>[b,a]));
+  const all=rounds.concat(second);
+  const base=new Date();base.setDate(base.getDate()+((7-base.getDay())%7||7));
+  return all.map((rd,ri)=>{
+    const d=new Date(base);d.setDate(d.getDate()+ri*7);
+    const fecha=d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
+    return rd.map(([a,b],mi)=>({home:a,away:b,fecha,hora:HORAS[mi%HORAS.length],estadio:ESTADIOS[a]||a+" (estadio propio)"}));
+  });
+}
+
+async function revealRound(ri,box){
+  box.innerHTML="";
+  const h=document.createElement("p");h.innerHTML="<b>Fecha "+(ri+1)+"</b>";box.appendChild(h);
+  for(const m of fixture[ri]){
+    const d=document.createElement("div");d.className="fx drawrow";
+    d.innerHTML="<span>"+m.home+"</span><span>"+m.hora+" · "+m.estadio+"</span><span>"+m.away+"</span>";
+    box.appendChild(d);
+    await new Promise(r=>setTimeout(r,260));
+  }
+}
+
+$("draw").onclick=async ()=>{
+  myClub=$("myClub").value;
+  fixture=roundRobin(LTEAMS);
+  results=fixture.map(rd=>rd.map(()=>null));
+  round=0;
+  $("draw").disabled=true;
+  await revealRound(0,$("drawAnim"));
+  $("draw").disabled=false;
+  $("ligaSetup").hidden=true;$("ligaBoard").hidden=false;
+  renderRound();renderTabla();renderCalendario();
+};
+
+function renderCalendario(){
+  const box=$("calList");box.innerHTML="";
+  fixture.forEach((rd,ri)=>{
+    const known=ri<=round; // solo se ve el detalle de fechas ya reveladas
+    const h=document.createElement("p");h.innerHTML="<b>Fecha "+(ri+1)+"</b>"+(known?"":" 🔒");
+    box.appendChild(h);
+    if(!known)return;
+    rd.forEach((m,mi)=>{
+      const r=results[ri][mi];
+      const row=document.createElement("div");row.className="fx";
+      row.innerHTML="<span>"+m.home+"</span><span>"+(r?r[0]+" - "+r[1]:m.hora)+"</span><span>"+m.away+"</span>";
+      box.appendChild(row);
+    });
+  });
+}
+
+function simMatch(a,b){
+  const la=TEAMS[a],lb=TEAMS[b];
+  const diff=(la-lb)/10;
+  const gaExp=Math.max(.3,1.3+diff*.5),gbExp=Math.max(.3,1.3-diff*.5);
+  const poisson=e=>{let L=Math.exp(-e),k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1};
+  return [poisson(gaExp),poisson(gbExp)];
+}
+
+function renderRound(){
+  $("curRound").textContent=round+1;
+  const list=$("fixtureList"),mine=$("myMatch"),btn=$("playMine");
+  list.innerHTML="";mine.innerHTML="";btn.hidden=true;
+  if(round>=fixture.length){mine.innerHTML="<p><b>Temporada terminada.</b></p>";return}
+  fixture[round].forEach((m,idx)=>{
+    const r=results[round][idx];
+    const isMine=m.home===myClub||m.away===myClub;
+    const line="<span>"+m.home+"</span><span>"+(r?r[0]+" - "+r[1]:m.hora)+"</span><span>"+m.away+"</span>";
+    if(isMine&&!r){
+      mine.innerHTML="<p class=\"note\">"+m.fecha+" · "+m.hora+" · "+m.estadio+"</p><div class=\"fx you\">"+line+"</div>";
+      btn.hidden=false;
+    }else{
+      const row=document.createElement("div");row.className="fx"+(isMine?" you":"");row.innerHTML=line;
+      list.appendChild(row);
+    }
+  });
+}
+
+function renderTabla(){
+  const st={};LTEAMS.forEach(t=>st[t]={pj:0,pts:0,gf:0,gc:0});
+  fixture.forEach((rd,ri)=>rd.forEach((m,mi)=>{
+    const r=results[ri][mi];if(!r)return;
+    const[ga,gb]=r,a=m.home,b=m.away;
+    st[a].pj++;st[b].pj++;st[a].gf+=ga;st[a].gc+=gb;st[b].gf+=gb;st[b].gc+=ga;
+    if(ga>gb)st[a].pts+=3;else if(ga<gb)st[b].pts+=3;else{st[a].pts++;st[b].pts++}
+  }));
+  const rows=LTEAMS.map(t=>({t,...st[t]})).sort((x,y)=>y.pts-x.pts||(y.gf-y.gc)-(x.gf-x.gc));
+  const tb=$("tabla").querySelector("tbody");tb.innerHTML="";
+  rows.forEach((r,i)=>{
+    const tr=document.createElement("tr");if(r.t===myClub)tr.className="you";
+    tr.innerHTML="<td>"+(i+1)+"</td><td>"+r.t+"</td><td>"+r.pj+"</td><td>"+r.pts+"</td><td>"+(r.gf-r.gc)+"</td>";
+    tb.appendChild(tr);
+  });
+}
+
+$("playMine").onclick=()=>{
+  const m=fixture[round].find(x=>x.home===myClub||x.away===myClub);
+  const rival=m.home===myClub?m.away:m.home;
+  $("tabP").click();
+  $("me").value=myClub;$("rv").value=rival;
+  ligaReturn={round,m};
+  start();
+};
+
+$("simAll").onclick=()=>{
+  for(;round<fixture.length;round++){
+    fixture[round].forEach((m,idx)=>{results[round][idx]=simMatch(m.home,m.away)});
+  }
+  renderRound();renderTabla();renderCalendario();
+};
+$("simReset").onclick=()=>{$("ligaBoard").hidden=true;$("ligaSetup").hidden=false};
+
+let ligaReturn=null;
+</script></main></body></html>
